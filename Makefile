@@ -30,11 +30,11 @@ lib/libspatialite.a: build_arches
 
 # Build separate architectures
 build_arches:
-	${MAKE} arch ARCH=armv7 IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
-	${MAKE} arch ARCH=armv7s IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
-	${MAKE} arch ARCH=arm64 IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
-	${MAKE} arch ARCH=i386 IOS_PLATFORM=iPhoneSimulator HOST=i386-apple-darwin
-	${MAKE} arch ARCH=x86_64 IOS_PLATFORM=iPhoneSimulator HOST=x86_64-apple-darwin
+	${MAKE} $(MAKEFLAGS) arch ARCH=armv7 IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
+	${MAKE} $(MAKEFLAGS) arch ARCH=armv7s IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
+	${MAKE} $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
+	${MAKE} $(MAKEFLAGS) arch ARCH=i386 IOS_PLATFORM=iPhoneSimulator HOST=i386-apple-darwin
+	${MAKE} $(MAKEFLAGS) arch ARCH=x86_64 IOS_PLATFORM=iPhoneSimulator HOST=x86_64-apple-darwin
 
 PREFIX = ${CURDIR}/build/${ARCH}
 LIBDIR = ${PREFIX}/lib
@@ -43,8 +43,8 @@ INCLUDEDIR = ${PREFIX}/include
 
 CXX = ${XCODE_DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
 CC = ${XCODE_DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
-CFLAGS = -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3 -fembed-bitcode
-CXXFLAGS = -stdlib=libc++ -std=c++11 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3 -fembed-bitcode
+CFLAGS = -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3 
+CXXFLAGS = -stdlib=libc++ -std=c++11 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3
 LDFLAGS = -stdlib=libc++ -isysroot ${IOS_SDK} -L${LIBDIR} -L${IOS_SDK}/usr/lib -arch ${ARCH} -miphoneos-version-min=7.0
 
 arch: ${LIBDIR}/libspatialite.a
@@ -53,9 +53,9 @@ ${LIBDIR}/libspatialite.a: ${LIBDIR}/libproj.a ${LIBDIR}/libgeos.a ${CURDIR}/spa
 	cd spatialite && env \
 	CXX=${CXX} \
 	CC=${CC} \
-	CFLAGS="${CFLAGS} -Wno-error=implicit-function-declaration" \
-	CXXFLAGS="${CXXFLAGS} -Wno-error=implicit-function-declaration" \
-	LDFLAGS="${LDFLAGS} -liconv -lgeos -lgeos_c -lc++" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared && make clean install-strip
+	CFLAGS="${CFLAGS} -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
+	CXXFLAGS="${CXXFLAGS} -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
+	LDFLAGS="${LDFLAGS} -liconv -lgeos -lgeos_c -lc++" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared && make $(MAKEFLAGS) clean install-strip
 
 ${CURDIR}/spatialite:
 	curl http://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-4.4.0-RC1.tar.gz > spatialite.tar.gz
@@ -71,7 +71,7 @@ ${LIBDIR}/libproj.a: ${CURDIR}/proj
 	CC=${CC} \
 	CFLAGS="${CFLAGS}" \
 	CXXFLAGS="${CXXFLAGS}" \
-	LDFLAGS="${LDFLAGS}" ./configure --host=${HOST} --prefix=${PREFIX} --disable-shared && make clean install
+	LDFLAGS="${LDFLAGS}" ./configure --host=${HOST} --prefix=${PREFIX} --disable-shared && make $(MAKEFLAGS) clean install
 
 ${CURDIR}/proj:
 	curl -L http://download.osgeo.org/proj/proj-4.9.3.tar.gz > proj.tar.gz
@@ -86,7 +86,7 @@ ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 	CC=${CC} \
 	CFLAGS="${CFLAGS}" \
 	CXXFLAGS="${CXXFLAGS}" \
-	LDFLAGS="${LDFLAGS}" ./configure --host=${HOST} --prefix=${PREFIX} --disable-shared && make clean install
+	LDFLAGS="${LDFLAGS}" ./configure --host=${HOST} --prefix=${PREFIX} --disable-shared && make $(MAKEFLAGS) clean install
 
 ${CURDIR}/geos:
 	curl http://download.osgeo.org/geos/geos-3.6.1.tar.bz2 > geos.tar.bz2
@@ -103,7 +103,7 @@ ${LIBDIR}/libsqlite3.a: ${CURDIR}/sqlite3
 	CXXFLAGS="${CXXFLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_ENABLE_RTREE=1 -DSQLITE_ENABLE_FTS3=1 -DSQLITE_ENABLE_FTS3_PARENTHESIS=1" \
 	LDFLAGS="-Wl,-arch -Wl,${ARCH} -arch_only ${ARCH} ${LDFLAGS}" \
 	./configure --host=${HOST} --prefix=${PREFIX} --disable-shared \
-	   --enable-dynamic-extensions --enable-static && make clean install-includeHEADERS install-libLTLIBRARIES
+	   --enable-dynamic-extensions --enable-static && make $(MAKEFLAGS) clean install-includeHEADERS install-libLTLIBRARIES
 
 ${CURDIR}/sqlite3:
 	curl https://www.sqlite.org/2018/sqlite-autoconf-3250200.tar.gz > sqlite3.tar.gz
