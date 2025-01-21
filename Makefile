@@ -58,27 +58,29 @@ ${LIBDIR}/libspatialite.a: ${LIBDIR}/libproj.a ${LIBDIR}/libgeos.a ${CURDIR}/spa
 	LDFLAGS="${LDFLAGS} -liconv -lgeos -lgeos_c -lc++" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared && make $(MAKEFLAGS) clean install-strip
 
 ${CURDIR}/spatialite:
-	curl http://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-4.4.0-RC1.tar.gz > spatialite.tar.gz
+	curl http://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-5.1.0.tar.gz > spatialite.tar.gz
 	tar -xzf spatialite.tar.gz
 	rm spatialite.tar.gz
-	mv libspatialite-4.4.0-RC1 spatialite
+	mv libspatialite-5.1.0 spatialite
 	./update-spatialite
 	./change-deployment-target spatialite
 
 ${LIBDIR}/libproj.a: ${CURDIR}/proj
-	cd proj && env \
-	CXX=${CXX} \
-	CC=${CC} \
-	CFLAGS="${CFLAGS}" \
-	CXXFLAGS="${CXXFLAGS}" \
-	LDFLAGS="${LDFLAGS}" ./configure --host=${HOST} --prefix=${PREFIX} --disable-shared && make $(MAKEFLAGS) clean install
+	@mkdir -p proj/build
+	cd proj/build && cmake .. \
+	  -DCMAKE_TOOLCHAIN_FILE=${CURDIR}/ios-toolchain.cmake \
+	  -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+	  -DCMAKE_C_FLAGS="$(CFLAGS)" \
+	  -DCMAKE_CXX_FLAGS="$(CXXFLAGS)" \
+	  -DCMAKE_EXE_LINKER_FLAGS="$(LDFLAGS)"
+	cd proj/build && cmake --build . --target install
 
 ${CURDIR}/proj:
-	curl -L http://download.osgeo.org/proj/proj-4.9.3.tar.gz > proj.tar.gz
+	curl -L http://download.osgeo.org/proj/proj-9.5.1.tar.gz > proj.tar.gz
 	tar -xzf proj.tar.gz
 	rm proj.tar.gz
-	mv proj-4.9.3 proj
-	./change-deployment-target proj
+	mv proj-9.5.1 proj
+	#./change-deployment-target proj
 
 ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 	cd geos && env \
@@ -89,11 +91,10 @@ ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 	LDFLAGS="${LDFLAGS}" ./configure --host=${HOST} --prefix=${PREFIX} --disable-shared && make $(MAKEFLAGS) clean install
 
 ${CURDIR}/geos:
-	curl http://download.osgeo.org/geos/geos-3.6.1.tar.bz2 > geos.tar.bz2
+	curl http://download.osgeo.org/geos/geos-3.9.5.tar.bz2 > geos.tar.bz2
 	tar -xzf geos.tar.bz2
 	rm geos.tar.bz2
-	mv geos-3.6.1 geos
-	./change-deployment-target geos
+	mv geos-3.9.5 geos
 
 ${LIBDIR}/libsqlite3.a: ${CURDIR}/sqlite3
 	cd sqlite3 && env LIBTOOL=${XCODE_DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool \

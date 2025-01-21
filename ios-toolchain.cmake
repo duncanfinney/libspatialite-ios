@@ -1,0 +1,5 @@
+# ios-toolchain.cmake
+set(CMAKE_SYSTEM_NAME iOS)
+set(CMAKE_OSX_SYSROOT ${IOS_SDK})
+set(CMAKE_OSX_ARCHITECTURES ${ARCH})
+set(CMAKE_IOS_DEployment_TARGET "7.0")

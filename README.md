@@ -21,8 +21,8 @@ Xcode 12.1 with Command Line Tools installed. The following compiled
 dependencies can be installed with Homebrew:
 
 ```sh
-brew install automake autoconf libtool libxml2 pkg-config
-brew link libxml2
+brew install automake autoconf libtool libxml2 pkg-config libtiff
+brew link libxml2 libtiff
 ```
 
 ## Installation
