@@ -5,7 +5,7 @@ IOS_PLATFORM ?= iPhoneOS
 IOS_PLATFORM_DEVELOPER = ${XCODE_DEVELOPER}/Platforms/${IOS_PLATFORM}.platform/Developer
 IOS_SDK = ${IOS_PLATFORM_DEVELOPER}/SDKs/$(shell ls ${IOS_PLATFORM_DEVELOPER}/SDKs | sort -r | head -n1)
 
-BUILD_DIRS = build/armv7 build/armv7s build/arm64 build/i386 build/x86_64
+BUILD_DIRS = ${CURDIR}/build/armv7 ${CURDIR}/build/armv7s ${CURDIR}/build/arm64 ${CURDIR}/build/i386 ${CURDIR}/build/x86_64
 
 all: lib/libspatialite.a
 lib/libspatialite.a: build_arches
@@ -68,8 +68,7 @@ ${CURDIR}/spatialite:
 	tar -xzf spatialite.tar.gz
 	rm spatialite.tar.gz
 	mv libspatialite-5.1.0 spatialite
-	#./update-spatialite
-	#./change-deployment-target spatialite
+	./update-spatialite
 
 # TODO: determine if we need libcurl and libtiff in the future
 ${LIBDIR}/libproj.a: ${CURDIR}/proj
@@ -91,7 +90,6 @@ ${CURDIR}/proj:
 	tar -xzf proj.tar.gz
 	rm proj.tar.gz
 	mv proj-9.5.1 proj
-	# ./change-deployment-target proj
 
 ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 	cd geos && mkdir -p build && cd build && cmake .. \
@@ -108,7 +106,6 @@ ${CURDIR}/geos:
 	tar -xzf geos.tar.bz2
 	rm geos.tar.bz2
 	mv geos-3.13.0 geos
-	#./change-deployment-target geos
 
 ${LIBDIR}/libsqlite3.a: ${CURDIR}/sqlite3
 	cd sqlite3 && env LIBTOOL=${XCODE_DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool \
@@ -125,7 +122,6 @@ ${CURDIR}/sqlite3:
 	tar xzvf sqlite3.tar.gz
 	rm sqlite3.tar.gz
 	mv sqlite-autoconf-3490000 sqlite3
-	#./change-deployment-target sqlite3
 	touch sqlite3
 
 clean:

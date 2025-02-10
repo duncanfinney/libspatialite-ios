@@ -9,6 +9,7 @@ patch -Np0 < patches/sqlite.h.patch
 patch -Np0 < patches/stored_procedures.c.patch
 patch -Np0 < patches/configure.patch
 
-for f in $(find spatialite -name Makefile*); do
+for f in $(find spatialite -name "Makefile*"); do
+  echo "Removing LOADABLE_EXTENSION: $f"
   sed -i '' 's/\-DLOADABLE_EXTENSION//g' $f
 done
