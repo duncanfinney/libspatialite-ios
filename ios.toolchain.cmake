@@ -16,7 +16,7 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
 endif()
 
 # Set the minimum iOS deployment target.
-set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "7.0")
 
 # Specify the architecture (adjust as needed, e.g., "arm64").
 set(CMAKE_OSX_ARCHITECTURES "arm64")
