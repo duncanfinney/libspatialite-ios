@@ -61,7 +61,7 @@ ${LIBDIR}/libspatialite.a: ${LIBDIR}/libproj.a ${LIBDIR}/libgeos.a ${CURDIR}/spa
 	CC=${CC} \
 	CFLAGS="${CFLAGS} -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
 	CXXFLAGS="${CXXFLAGS} -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
-	LDFLAGS="${LDFLAGS} -liconv -lgeos -lgeos_c -lc++" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared && make $(MAKEFLAGS) clean install-strip
+	LDFLAGS="${LDFLAGS} -liconv -lgeos -lgeos_c -lc++ -lproj" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --enable-rttopo=no --disable-rttopo --disable-gcp --enable-minizip=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared --disable-loadable-extension && make $(MAKEFLAGS) clean install-strip
 
 ${CURDIR}/spatialite:
 	curl http://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-5.1.0.tar.gz > spatialite.tar.gz
