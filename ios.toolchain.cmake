@@ -1,6 +1,6 @@
 # ios.toolchain.cmake
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 # Tell CMake we're cross-compiling for iOS.
 set(CMAKE_SYSTEM_NAME iOS)

@@ -48,7 +48,7 @@ CXXFLAGS = -stdlib=libc++ -std=c++11 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/inclu
 LDFLAGS = -stdlib=libc++ -isysroot ${IOS_SDK} -L${LIBDIR} -L${IOS_SDK}/usr/lib -arch ${ARCH} -miphoneos-version-min=7.0
 
 # arch: ${LIBDIR}/libspatialite.a TODO: put me back
-arch: ${LIBDIR}/libgeos.a 
+arch: ${LIBDIR}/libproj.a 
 
 ${LIBDIR}/libspatialite.a: ${LIBDIR}/libproj.a ${LIBDIR}/libgeos.a ${CURDIR}/spatialite
 	cd spatialite && env \
@@ -66,20 +66,27 @@ ${CURDIR}/spatialite:
 	./update-spatialite
 	./change-deployment-target spatialite
 
+# TODO: determine if we need libcurl and libtiff in the future
 ${LIBDIR}/libproj.a: ${CURDIR}/proj
-	cd proj && env \
-	CXX=${CXX} \
-	CC=${CC} \
-	CFLAGS="${CFLAGS}" \
-	CXXFLAGS="${CXXFLAGS}" \
-	LDFLAGS="${LDFLAGS}" ./configure --host=${HOST} --prefix=${PREFIX} --disable-shared && make $(MAKEFLAGS) clean install
+	cd proj && mkdir -p build && cd build && cmake .. \
+		-DCMAKE_TOOLCHAIN_FILE=${CURDIR}/ios.toolchain.cmake \
+		-DCMAKE_INSTALL_PREFIX=${PREFIX} \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DCMAKE_C_FLAGS="${CFLAGS}" \
+		-DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
+		-DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS}" \
+		-DENABLE_CURL=OFF \
+		-DENABLE_TIFF=OFF \
+		-DBUILD_PROJSYNC=OFF \
+		&& \
+	make $(MAKEFLAGS) && make install
 
 ${CURDIR}/proj:
-	curl -L http://download.osgeo.org/proj/proj-4.9.3.tar.gz > proj.tar.gz
+	curl -L http://download.osgeo.org/proj/proj-9.5.1.tar.gz > proj.tar.gz
 	tar -xzf proj.tar.gz
 	rm proj.tar.gz
-	mv proj-4.9.3 proj
-	./change-deployment-target proj
+	mv proj-9.5.1 proj
+	# ./change-deployment-target proj
 
 ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 	cd geos && mkdir -p build && cd build && cmake .. \
