@@ -24,3 +24,4 @@ proj
 spatialite
 sqlite3
 .DS_Store
+libspatialite.xcframework/
