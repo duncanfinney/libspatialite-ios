@@ -5,6 +5,8 @@ IOS_PLATFORM ?= iPhoneOS
 IOS_PLATFORM_DEVELOPER = ${XCODE_DEVELOPER}/Platforms/${IOS_PLATFORM}.platform/Developer
 IOS_SDK = ${IOS_PLATFORM_DEVELOPER}/SDKs/$(shell ls ${IOS_PLATFORM_DEVELOPER}/SDKs | sort -r | head -n1)
 
+BUILD_DIRS = build/armv7 build/armv7s build/arm64 build/i386 build/x86_64
+
 all: lib/libspatialite.a
 lib/libspatialite.a: build_arches
 	mkdir -p lib
@@ -29,12 +31,16 @@ lib/libspatialite.a: build_arches
 		done;
 
 # Build separate architectures
-build_arches:
+build_arches: $(BUILD_DIRS)
 	${MAKE} $(MAKEFLAGS) arch ARCH=armv7 IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
 	${MAKE} $(MAKEFLAGS) arch ARCH=armv7s IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
 	${MAKE} $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
 	${MAKE} $(MAKEFLAGS) arch ARCH=i386 IOS_PLATFORM=iPhoneSimulator HOST=i386-apple-darwin
 	${MAKE} $(MAKEFLAGS) arch ARCH=x86_64 IOS_PLATFORM=iPhoneSimulator HOST=x86_64-apple-darwin
+
+# make sure the build directories are made
+${CURDIR}/build/%:
+	mkdir -p $@
 
 PREFIX = ${CURDIR}/build/${ARCH}
 LIBDIR = ${PREFIX}/lib
@@ -47,10 +53,9 @@ CFLAGS = -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDE
 CXXFLAGS = -stdlib=libc++ -std=c++11 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3
 LDFLAGS = -stdlib=libc++ -isysroot ${IOS_SDK} -L${LIBDIR} -L${IOS_SDK}/usr/lib -arch ${ARCH} -miphoneos-version-min=7.0
 
-# arch: ${LIBDIR}/libspatialite.a TODO: put me back
-arch: ${LIBDIR}/libproj.a 
+arch: ${LIBDIR}/libspatialite.a
 
-${LIBDIR}/libspatialite.a: ${LIBDIR}/libproj.a ${LIBDIR}/libgeos.a ${CURDIR}/spatialite
+${LIBDIR}/libspatialite.a: ${LIBDIR}/libproj.a ${LIBDIR}/libgeos.a ${CURDIR}/spatialite | ${CURDIR}/build/${ARCH}
 	cd spatialite && env \
 	CXX=${CXX} \
 	CC=${CC} \
@@ -63,8 +68,8 @@ ${CURDIR}/spatialite:
 	tar -xzf spatialite.tar.gz
 	rm spatialite.tar.gz
 	mv libspatialite-5.1.0 spatialite
-	./update-spatialite
-	./change-deployment-target spatialite
+	#./update-spatialite
+	#./change-deployment-target spatialite
 
 # TODO: determine if we need libcurl and libtiff in the future
 ${LIBDIR}/libproj.a: ${CURDIR}/proj
@@ -113,14 +118,14 @@ ${LIBDIR}/libsqlite3.a: ${CURDIR}/sqlite3
 	CXXFLAGS="${CXXFLAGS} -DSQLITE_THREADSAFE=1 -DSQLITE_ENABLE_RTREE=1 -DSQLITE_ENABLE_FTS3=1 -DSQLITE_ENABLE_FTS3_PARENTHESIS=1" \
 	LDFLAGS="-Wl,-arch -Wl,${ARCH} -arch_only ${ARCH} ${LDFLAGS}" \
 	./configure --host=${HOST} --prefix=${PREFIX} --disable-shared \
-	   --enable-dynamic-extensions --enable-static && make $(MAKEFLAGS) clean install-includeHEADERS install-libLTLIBRARIES
+	   --enable-static && make $(MAKEFLAGS) clean install-headers install-lib
 
 ${CURDIR}/sqlite3:
-	curl https://www.sqlite.org/2018/sqlite-autoconf-3250200.tar.gz > sqlite3.tar.gz
+	curl https://www.sqlite.org/2025/sqlite-autoconf-3490000.tar.gz > sqlite3.tar.gz
 	tar xzvf sqlite3.tar.gz
 	rm sqlite3.tar.gz
-	mv sqlite-autoconf-3250200 sqlite3
-	./change-deployment-target sqlite3
+	mv sqlite-autoconf-3490000 sqlite3
+	#./change-deployment-target sqlite3
 	touch sqlite3
 
 clean:
