@@ -24,8 +24,6 @@ lib/libspatialite.a: build_arches
 			-arch armv7 build/armv7/lib/$$name.a \
 			-arch armv7s build/armv7s/lib/$$name.a \
 			-arch arm64 build/arm64/lib/$$name.a \
-			-arch i386 build/i386/lib/$$name.a \
-			-arch x86_64 build/x86_64/lib/$$name.a \
 			-output lib/$$name.a \
 		; \
 		done;
@@ -35,8 +33,6 @@ build_arches: $(BUILD_DIRS)
 	${MAKE} $(MAKEFLAGS) arch ARCH=armv7 IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
 	${MAKE} $(MAKEFLAGS) arch ARCH=armv7s IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
 	${MAKE} $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=iPhoneOS HOST=arm-apple-darwin
-	${MAKE} $(MAKEFLAGS) arch ARCH=i386 IOS_PLATFORM=iPhoneSimulator HOST=i386-apple-darwin
-	${MAKE} $(MAKEFLAGS) arch ARCH=x86_64 IOS_PLATFORM=iPhoneSimulator HOST=x86_64-apple-darwin
 
 # make sure the build directories are made
 ${CURDIR}/build/%:
@@ -50,7 +46,7 @@ INCLUDEDIR = ${PREFIX}/include
 CXX = ${XCODE_DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
 CC = ${XCODE_DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
 CFLAGS = -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3 
-CXXFLAGS = -stdlib=libc++ -std=c++11 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3
+CXXFLAGS = -stdlib=libc++ -std=c++14 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3
 LDFLAGS = -stdlib=libc++ -isysroot ${IOS_SDK} -L${LIBDIR} -L${IOS_SDK}/usr/lib -arch ${ARCH} -miphoneos-version-min=7.0
 
 arch: ${LIBDIR}/libspatialite.a
@@ -61,7 +57,7 @@ ${LIBDIR}/libspatialite.a: ${LIBDIR}/libproj.a ${LIBDIR}/libgeos.a ${CURDIR}/spa
 	CC=${CC} \
 	CFLAGS="${CFLAGS} -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
 	CXXFLAGS="${CXXFLAGS} -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
-	LDFLAGS="${LDFLAGS} -liconv -lgeos -lgeos_c -lc++ -lproj" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --enable-rttopo=no --disable-rttopo --disable-gcp --enable-minizip=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared --disable-loadable-extension && make $(MAKEFLAGS) clean install-strip
+	LDFLAGS="${LDFLAGS} -lc++ -liconv -lgeos -lgeos_c  -lproj" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --enable-rttopo=no --disable-rttopo --disable-gcp --enable-minizip=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared --disable-loadable-extension && make $(MAKEFLAGS) clean install-strip
 
 ${CURDIR}/spatialite:
 	curl http://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-5.1.0.tar.gz > spatialite.tar.gz
@@ -82,6 +78,8 @@ ${LIBDIR}/libproj.a: ${CURDIR}/proj
 		-DENABLE_CURL=OFF \
 		-DENABLE_TIFF=OFF \
 		-DBUILD_PROJSYNC=OFF \
+		-DBUILD_TESTING=OFF \
+		-DBUILD_APPS=OFF \
 		&& \
 	make $(MAKEFLAGS) && make install
 
@@ -96,6 +94,8 @@ ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 		-DCMAKE_TOOLCHAIN_FILE=${CURDIR}/ios.toolchain.cmake \
 		-DCMAKE_INSTALL_PREFIX=${PREFIX} \
 		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_TESTING=OFF \
+		-DBUILD_DOCUMENTATION=OFF \
 		-DCMAKE_C_FLAGS="${CFLAGS}" \
 		-DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
 		-DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS}" && \
