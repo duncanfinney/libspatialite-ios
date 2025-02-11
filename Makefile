@@ -1,7 +1,8 @@
 XCODE_DEVELOPER = $(shell xcode-select --print-path)
 IOS_PLATFORM ?= iPhoneOS
 
-BUILD_PARALLELISM ?= $(shell sysctl -n hw.ncpu)
+# BUILD_PARALLELISM ?= $(shell sysctl -n hw.ncpu)
+BUILD_PARALLELISM = 1
 
 # Pick latest SDK in the directory
 IOS_PLATFORM_DEVELOPER = ${XCODE_DEVELOPER}/Platforms/${IOS_PLATFORM}.platform/Developer
@@ -47,9 +48,11 @@ INCLUDEDIR = ${PREFIX}/include
 
 CXX = ${XCODE_DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
 CC = ${XCODE_DEVELOPER}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
-CFLAGS = -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3 
-CXXFLAGS = -stdlib=libc++ -std=c++14 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3
-LDFLAGS = -stdlib=libc++ -isysroot ${IOS_SDK} -L${LIBDIR} -L${IOS_SDK}/usr/lib -arch ${ARCH} -miphoneos-version-min=7.0
+# CFLAGS = -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3 
+# CXXFLAGS = -stdlib=libc++ -std=c++14 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -miphoneos-version-min=7.0 -O3
+CFLAGS = -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -mios-simulator-version-min=7.0 -O3 
+CXXFLAGS = -stdlib=libc++ -std=c++14 -isysroot ${IOS_SDK} -I${IOS_SDK}/usr/include -arch ${ARCH} -I${INCLUDEDIR} -mios-simulator-version-min=7.0 -O3
+LDFLAGS = -stdlib=libc++ -isysroot ${IOS_SDK} -L${LIBDIR} -L${IOS_SDK}/usr/lib -arch ${ARCH} -mios-simulator-version-min=7.0
 
 arch: ${LIBDIR}/libspatialite.a
 
@@ -71,6 +74,7 @@ ${CURDIR}/spatialite:
 # TODO: determine if we need libcurl and libtiff in the future
 ${LIBDIR}/libproj.a: ${CURDIR}/proj
 	cd proj && mkdir -p build && cd build && cmake .. \
+		-DCMAKE_OSX_SYSROOT=$$(xcrun --sdk iphoneos --show-sdk-path) \
 	 	-DCMAKE_OSX_ARCHITECTURES=${ARCH} \
 		-DCMAKE_TOOLCHAIN_FILE=${CURDIR}/ios.toolchain.cmake \
 		-DCMAKE_INSTALL_PREFIX=${PREFIX} \
@@ -94,6 +98,7 @@ ${CURDIR}/proj:
 
 ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 	cd geos && mkdir -p build && cd build && cmake .. \
+		-DCMAKE_OSX_SYSROOT=$$(xcrun --sdk iphoneos --show-sdk-path) \
 		-DCMAKE_OSX_ARCHITECTURES=${ARCH} \
 		-DCMAKE_TOOLCHAIN_FILE=${CURDIR}/ios.toolchain.cmake \
 		-DCMAKE_INSTALL_PREFIX=${PREFIX} \
