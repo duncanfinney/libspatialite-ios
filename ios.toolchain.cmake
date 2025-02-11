@@ -19,7 +19,11 @@ endif()
 set(CMAKE_OSX_DEPLOYMENT_TARGET "7.0")
 
 # Specify the architecture (adjust as needed, e.g., "arm64").
-set(CMAKE_OSX_ARCHITECTURES "arm64")
+# Ensure that CMAKE_OSX_ARCHITECTURES is provided by the user.
+if(NOT DEFINED CMAKE_OSX_ARCHITECTURES)
+  message(FATAL_ERROR "CMAKE_OSX_ARCHITECTURES must be specified. Please pass -DCMAKE_OSX_ARCHITECTURES=<architecture> on the command line.")
+endif()
+
 
 # Set the compilers (adjust paths if needed).
 set(CMAKE_C_COMPILER clang)

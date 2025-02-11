@@ -1,6 +1,8 @@
 XCODE_DEVELOPER = $(shell xcode-select --print-path)
 IOS_PLATFORM ?= iPhoneOS
 
+BUILD_PARALLELISM ?= $(shell sysctl -n hw.ncpu)
+
 # Pick latest SDK in the directory
 IOS_PLATFORM_DEVELOPER = ${XCODE_DEVELOPER}/Platforms/${IOS_PLATFORM}.platform/Developer
 IOS_SDK = ${IOS_PLATFORM_DEVELOPER}/SDKs/$(shell ls ${IOS_PLATFORM_DEVELOPER}/SDKs | sort -r | head -n1)
@@ -57,7 +59,7 @@ ${LIBDIR}/libspatialite.a: ${LIBDIR}/libproj.a ${LIBDIR}/libgeos.a ${CURDIR}/spa
 	CC=${CC} \
 	CFLAGS="${CFLAGS} -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
 	CXXFLAGS="${CXXFLAGS} -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
-	LDFLAGS="${LDFLAGS} -lc++ -liconv -lgeos -lgeos_c  -lproj" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --enable-rttopo=no --disable-rttopo --disable-gcp --enable-minizip=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared --disable-loadable-extension && make $(MAKEFLAGS) clean install-strip
+	LDFLAGS="${LDFLAGS} -lc++ -liconv -lgeos -lgeos_c  -lproj" ./configure --host=${HOST} --enable-freexl=no --enable-libxml2=no --enable-rttopo=no --disable-rttopo --disable-gcp --enable-minizip=no --prefix=${PREFIX} --with-geosconfig=${BINDIR}/geos-config --disable-shared --disable-loadable-extension && make clean && make -j $(BUILD_PARALLELISM) $(MAKEFLAGS) install-strip
 
 ${CURDIR}/spatialite:
 	curl http://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-5.1.0.tar.gz > spatialite.tar.gz
@@ -69,6 +71,7 @@ ${CURDIR}/spatialite:
 # TODO: determine if we need libcurl and libtiff in the future
 ${LIBDIR}/libproj.a: ${CURDIR}/proj
 	cd proj && mkdir -p build && cd build && cmake .. \
+	 	-DCMAKE_OSX_ARCHITECTURES=${ARCH} \
 		-DCMAKE_TOOLCHAIN_FILE=${CURDIR}/ios.toolchain.cmake \
 		-DCMAKE_INSTALL_PREFIX=${PREFIX} \
 		-DBUILD_SHARED_LIBS=OFF \
@@ -81,7 +84,7 @@ ${LIBDIR}/libproj.a: ${CURDIR}/proj
 		-DBUILD_TESTING=OFF \
 		-DBUILD_APPS=OFF \
 		&& \
-	make $(MAKEFLAGS) && make install
+	make -j $(BUILD_PARALLELISM) $(MAKEFLAGS) && make install
 
 ${CURDIR}/proj:
 	curl -L http://download.osgeo.org/proj/proj-9.5.1.tar.gz > proj.tar.gz
@@ -91,6 +94,7 @@ ${CURDIR}/proj:
 
 ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 	cd geos && mkdir -p build && cd build && cmake .. \
+		-DCMAKE_OSX_ARCHITECTURES=${ARCH} \
 		-DCMAKE_TOOLCHAIN_FILE=${CURDIR}/ios.toolchain.cmake \
 		-DCMAKE_INSTALL_PREFIX=${PREFIX} \
 		-DBUILD_SHARED_LIBS=OFF \
@@ -99,7 +103,7 @@ ${LIBDIR}/libgeos.a: ${CURDIR}/geos
 		-DCMAKE_C_FLAGS="${CFLAGS}" \
 		-DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
 		-DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS}" && \
-	make $(MAKEFLAGS) && make install
+	make -j $(BUILD_PARALLELISM) $(MAKEFLAGS) && make install
 
 ${CURDIR}/geos:
 	curl http://download.osgeo.org/geos/geos-3.13.0.tar.bz2 > geos.tar.bz2
