@@ -1,6 +1,6 @@
 XCODE_DEVELOPER = $(shell xcode-select --print-path)
 IOS_PLATFORM ?= iPhoneOS
-BUILD_PARALLELISM = 10
+BUILD_PARALLELISM ?= 10
 
 # Set SDK name and minimum version flag based on IOS_PLATFORM
 ifeq ($(IOS_PLATFORM), iPhoneSimulator)
@@ -24,21 +24,7 @@ BUILD_DIRS = $(CURDIR)/build/armv7-iPhoneOS \
 all: lib/libspatialite.a
 
 lib/libspatialite.a: build_arches
-	@mkdir -p lib include
-	# Copy includes from the arm64-iPhoneOS build
-	cp -R build/arm64-iPhoneOS/include/geos  include
-	cp -R build/arm64-iPhoneOS/include/spatialite  include
-	cp -R build/arm64-iPhoneOS/include/*.h  include
-	# Create fat libraries by combining the static libraries
-	for file in build/arm64-iPhoneOS/lib/*.a; do \
-	  name=`basename $$file .a`; \
-	  lipo -create \
-	    -arch armv7     build/armv7-iPhoneOS/lib/$$name.a \
-	    -arch armv7s    build/armv7s-iPhoneOS/lib/$$name.a \
-	    -arch arm64    build/arm64-iPhoneOS/lib/$$name.a \
-	    -arch arm64    build/arm64-iPhoneSimulator/lib/$$name.a \
-	    -output lib/$$name.a; \
-	done
+	@./build-xcframework.sh
 
 # Build separate architectures
 build_arches: $(BUILD_DIRS)
@@ -144,4 +130,5 @@ $(CURDIR)/sqlite3:
 	touch sqlite3
 
 clean:
-	rm -rf build geos proj spatialite include lib
+	rm -rf build geos proj spatialite include lib sqlite3
+	rm -rf libspatialite.xcframework merged
