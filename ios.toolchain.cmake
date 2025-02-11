@@ -7,12 +7,7 @@ set(CMAKE_SYSTEM_NAME iOS)
 
 # Get the iOS SDK path using xcrun.
 if(NOT DEFINED CMAKE_OSX_SYSROOT)
-  execute_process(
-    COMMAND xcrun --sdk iphoneos --show-sdk-path
-    OUTPUT_VARIABLE SDKROOT
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  set(CMAKE_OSX_SYSROOT ${SDKROOT})
+  message(FATAL_ERROR "CMAKE_OSX_SYSROOT must be specified. Please pass -DCMAKE_OSX_SYSROOT=(xcrun --sdk <iphoneos or iphonesimulator> --show-sdk-path) on the command line.")
 endif()
 
 # Set the minimum iOS deployment target.
