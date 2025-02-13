@@ -1,0 +1,14 @@
+--- libspatialite-5.1.0/configure	2023-08-04 01:51:40
++++ spatialite/configure	2025-02-10 06:56:57
+@@ -18290,11 +18290,9 @@
+ #ifdef __cplusplus
+ extern "C"
+ #endif
+-char proj_normalize_for_visualization ();
+ int
+ main ()
+ {
+-return proj_normalize_for_visualization ();
+   ;
+   return 0;
+ }
