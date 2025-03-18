@@ -3,18 +3,18 @@ set -eo pipefail
 
 # This script combines everything into two static libs (iPhoneSimulator and iPhoneOS) and puts both into an xcframework file
 
-# ex: arm64-iPhoneOS
+# Install the headers to include/
 FIRST_BUILD_TUPLE=$(ls build | head -n 1)
 mkdir -p lib include
 cp -r build/$FIRST_BUILD_TUPLE/include/ include/
-
-#!/bin/bash
-set -e
 
 # Directories (adjust if needed)
 BUILD_DIR="./build"
 OUT_DIR="./merged"
 XCFRAMEWORK_OUTPUT="libspatialite.xcframework"
+
+rm -rf "$OUT_DIR"
+rm -rf "$XCFRAMEWORK_OUTPUT"
 
 mkdir -p "$OUT_DIR"
 
@@ -50,6 +50,7 @@ lipo -create \
   "$OUT_DIR/merged-armv7s-iPhoneOS.a" \
   -output "$OUT_DIR/merged-device.a"
 
+#------------------------------------------------------------------------------
 # For simulator, merge the simulator libraries (here we have just arm64):
 echo "Merging simulator libraries..."
 libtool -static -o "$OUT_DIR/merged-arm64-iPhoneSimulator.a" \
@@ -63,12 +64,22 @@ libtool -static -o "$OUT_DIR/merged-arm64-iPhoneSimulator.a" \
 cp "$OUT_DIR/merged-arm64-iPhoneSimulator.a" "$OUT_DIR/merged-simulator.a"
 
 #------------------------------------------------------------------------------
+# Merge mac libraries (arm64-MacOSX)
+echo "Merging mac libraries..."
+libtool -static -o "$OUT_DIR/merged-mac.a" \
+  "$BUILD_DIR/arm64-MacOSX/lib/libspatialite.a" \
+  "$BUILD_DIR/arm64-MacOSX/lib/libgeos.a" \
+  "$BUILD_DIR/arm64-MacOSX/lib/libgeos_c.a" \
+  "$BUILD_DIR/arm64-MacOSX/lib/libproj.a"
+
+#------------------------------------------------------------------------------
 # Create the XCFramework.
 # We assume the public headers are identical; here we use the device headers.
 echo "Creating XCFramework..."
 xcodebuild -create-xcframework \
   -library "$OUT_DIR/merged-device.a" -headers "$BUILD_DIR/arm64-iPhoneOS/include" \
   -library "$OUT_DIR/merged-simulator.a" -headers "$BUILD_DIR/arm64-iPhoneSimulator/include" \
+  -library "$OUT_DIR/merged-mac.a" -headers "$BUILD_DIR/arm64-MacOSX/include" \
   -output "$XCFRAMEWORK_OUTPUT"
 
 echo "XCFramework created at: $XCFRAMEWORK_OUTPUT"
