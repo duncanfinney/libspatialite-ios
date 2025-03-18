@@ -2,69 +2,93 @@ XCODE_DEVELOPER = $(shell xcode-select --print-path)
 IOS_PLATFORM ?= iPhoneOS
 BUILD_PARALLELISM ?= 10
 
-# Set SDK name and minimum version flag based on IOS_PLATFORM
+# Set SDK name, minimum version flag, and platform directory based on IOS_PLATFORM
 ifeq ($(IOS_PLATFORM), iPhoneSimulator)
     IOS_SDK_NAME = iphonesimulator
     MIN_VERSION_FLAG = -mios-simulator-version-min=7.0
+    PLATFORM_DIR = iPhoneSimulator
 else ifeq ($(IOS_PLATFORM), iPhoneOS)
     IOS_SDK_NAME = iphoneos
     MIN_VERSION_FLAG = -miphoneos-version-min=7.0
+    PLATFORM_DIR = iPhoneOS
+else ifeq ($(IOS_PLATFORM), AppleWatchSimulator)
+    IOS_SDK_NAME = watchsimulator
+    MIN_VERSION_FLAG = -mwatchos-version-min=2.0
+    PLATFORM_DIR = WatchSimulator
+else ifeq ($(IOS_PLATFORM), AppleWatchOS)
+    IOS_SDK_NAME = watchos
+    MIN_VERSION_FLAG = -mwatchos-version-min=2.0
+    PLATFORM_DIR = WatchOS
 else ifeq ($(IOS_PLATFORM), MacOSX)
     IOS_SDK_NAME = macosx
     MIN_VERSION_FLAG = -mmacosx-version-min=10.12
+    PLATFORM_DIR = MacOSX
 endif
 
-# Pick the latest SDK in the directory (for iOS; for MacOSX we assume Xcode default)
+# Set SDK path
 ifeq ($(IOS_PLATFORM), MacOSX)
     IOS_SDK = $(shell xcrun --sdk macosx --show-sdk-path)
     IOS_PLATFORM_DEVELOPER =
 else
-    IOS_PLATFORM_DEVELOPER = $(XCODE_DEVELOPER)/Platforms/$(IOS_PLATFORM).platform/Developer
+    IOS_PLATFORM_DEVELOPER = $(XCODE_DEVELOPER)/Platforms/$(PLATFORM_DIR).platform/Developer
     IOS_SDK = $(IOS_PLATFORM_DEVELOPER)/SDKs/$(shell ls $(IOS_PLATFORM_DEVELOPER)/SDKs | sort -r | head -n1)
 endif
 
-# Conditionally set the toolchain file flag (only for iOS builds)
-ifeq ($(IOS_PLATFORM),MacOSX)
+# Choose toolchain: use watchos toolchain for watch builds.
+ifeq ($(IOS_PLATFORM), MacOSX)
     TOOLCHAIN =
+else ifeq ($(IOS_PLATFORM), AppleWatchOS)
+    TOOLCHAIN = -DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/watchos.toolchain.cmake
+else ifeq ($(IOS_PLATFORM), AppleWatchSimulator)
+    TOOLCHAIN = -DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/watchos.toolchain.cmake
 else
     TOOLCHAIN = -DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/ios.toolchain.cmake
 endif
 
-# For MacOSX, add extra flags: set system name and specify compiler paths.
+# Extra flags for MacOSX: do not force a system name.
 ifeq ($(IOS_PLATFORM),MacOSX)
-    EXTRA_CMAKE_FLAGS = -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+    EXTRA_CMAKE_FLAGS =
 else
     EXTRA_CMAKE_FLAGS =
 endif
 
-unexport IOS_PLATFORM
+ifeq ($(IOS_PLATFORM), AppleWatchSimulator)
+    TARGET_FLAGS = -target arm64-apple-watchos-simulator
+else
+    TARGET_FLAGS =
+endif
 
-# Build directories for our desired arches/platforms
+# Build directories for various arches/platforms, including Apple Watch
 BUILD_DIRS = $(CURDIR)/build/armv7-iPhoneOS \
              $(CURDIR)/build/armv7s-iPhoneOS \
              $(CURDIR)/build/arm64-iPhoneOS \
              $(CURDIR)/build/arm64-iPhoneSimulator \
-             $(CURDIR)/build/arm64-MacOSX
+             $(CURDIR)/build/arm64-MacOSX \
+             $(CURDIR)/build/armv7k-AppleWatchOS \
+             $(CURDIR)/build/arm64_32-AppleWatchOS \
+			 $(CURDIR)/build/arm64_32-AppleWatchSimulator
 
 all: lib/libspatialite.a
 
 lib/libspatialite.a: build_arches
 	@./build-xcframework.sh
 
-# Build separate architectures, including a host build for ARM macOS.
+# Build architectures; note HOST for watch builds is set to arm-apple-watchos.
 build_arches: $(BUILD_DIRS)
-	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7  IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
-	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7s IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
-	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64 IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
-	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64 IOS_PLATFORM=iPhoneSimulator HOST=arm-apple-darwin
-	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64 IOS_PLATFORM=MacOSX         HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7    IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7s   IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64    IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64    IOS_PLATFORM=iPhoneSimulator HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7k   IOS_PLATFORM=AppleWatchOS  	HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64_32 IOS_PLATFORM=AppleWatchOS 	HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64 IOS_PLATFORM=AppleWatchSimulator HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64    IOS_PLATFORM=MacOSX
 
-
-# Create the build directory for a given ARCH and IOS_PLATFORM
+# Create build directory for given ARCH and IOS_PLATFORM
 $(CURDIR)/build/%:
 	@mkdir -p $@
 
-# Define installation prefixes based on arch and platform
+# Define installation prefixes
 PREFIX     = $(CURDIR)/build/$(ARCH)-$(IOS_PLATFORM)
 LIBDIR     = $(PREFIX)/lib
 BINDIR     = $(PREFIX)/bin
@@ -72,11 +96,11 @@ INCLUDEDIR = $(PREFIX)/include
 
 CXX      = $(XCODE_DEVELOPER)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
 CC       = $(XCODE_DEVELOPER)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
-CFLAGS   = -isysroot $(IOS_SDK) -I$(IOS_SDK)/usr/include -arch $(ARCH) -I$(INCLUDEDIR) $(MIN_VERSION_FLAG) -O3
-CXXFLAGS = -stdlib=libc++ -std=c++14 -isysroot $(IOS_SDK) -I$(IOS_SDK)/usr/include -arch $(ARCH) -I$(INCLUDEDIR) $(MIN_VERSION_FLAG) -O3
-LDFLAGS  = -stdlib=libc++ -isysroot $(IOS_SDK) -L$(LIBDIR) -L$(IOS_SDK)/usr/lib -arch $(ARCH) $(MIN_VERSION_FLAG)
+CFLAGS   = -isysroot $(IOS_SDK) -I$(IOS_SDK)/usr/include -arch $(ARCH) $(TARGET_FLAGS) -I$(INCLUDEDIR) $(MIN_VERSION_FLAG) -O3
+CXXFLAGS = -stdlib=libc++ -std=c++14 -isysroot $(IOS_SDK) -I$(IOS_SDK)/usr/include -arch $(ARCH) $(TARGET_FLAGS) -I$(INCLUDEDIR) $(MIN_VERSION_FLAG) -O3
+LDFLAGS  = -stdlib=libc++ -isysroot $(IOS_SDK) -L$(LIBDIR) -L$(IOS_SDK)/usr/lib -arch $(ARCH) $(TARGET_FLAGS) $(MIN_VERSION_FLAG)
 
-# Build the spatialite library for a given arch/platform.
+# Build spatialite library for given arch/platform.
 arch: $(LIBDIR)/libspatialite.a
 
 $(LIBDIR)/libspatialite.a: $(LIBDIR)/libproj.a $(LIBDIR)/libgeos.a $(CURDIR)/spatialite | $(CURDIR)/build/$(ARCH)-$(IOS_PLATFORM)
@@ -96,13 +120,16 @@ $(CURDIR)/spatialite:
 	mv libspatialite-5.1.0 spatialite
 	./update-spatialite
 
+# Build proj with explicit compiler paths
 $(LIBDIR)/libproj.a: $(CURDIR)/proj
-	cd proj && mkdir -p build && cd build && cmake .. \
-	  -DCMAKE_OSX_SYSROOT=$$(xcrun --sdk $(IOS_SDK_NAME) --show-sdk-path) \
+	cd proj && rm -rf build && mkdir -p build && cd build && cmake .. \
+	  -DCMAKE_OSX_SYSROOT=$(IOS_SDK) \
 	  -DCMAKE_OSX_ARCHITECTURES=$(ARCH) \
 	  $(TOOLCHAIN) \
 	  $(EXTRA_CMAKE_FLAGS) \
 	  -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+	  -DCMAKE_C_COMPILER=$(CC) \
+	  -DCMAKE_CXX_COMPILER=$(CXX) \
 	  -DBUILD_SHARED_LIBS=OFF \
 	  -DCMAKE_C_FLAGS="$(CFLAGS)" \
 	  -DCMAKE_CXX_FLAGS="$(CXXFLAGS)" \
@@ -126,18 +153,21 @@ $(CURDIR)/proj:
 	rm proj.tar.gz
 	mv proj-9.5.1 proj
 
+# Build geos with explicit compiler paths
 $(LIBDIR)/libgeos.a: $(CURDIR)/geos
-	env | sort
-	cd geos && mkdir -p build && cd build && cmake .. \
-	  -DCMAKE_OSX_SYSROOT=$$(xcrun --sdk $(IOS_SDK_NAME) --show-sdk-path) \
+	cd geos && rm -rf build && mkdir -p build && cd build && cmake .. \
+	  -DCMAKE_OSX_SYSROOT=$(IOS_SDK) \
 	  -DCMAKE_OSX_ARCHITECTURES=$(ARCH) \
 	  $(TOOLCHAIN) \
 	  $(EXTRA_CMAKE_FLAGS) \
 	  -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+	  -DCMAKE_C_COMPILER=$(CC) \
+	  -DCMAKE_CXX_COMPILER=$(CXX) \
 	  -DBUILD_SHARED_LIBS=OFF \
 	  -DBUILD_TESTING=OFF \
 	  -DBUILD_DOCUMENTATION=OFF \
 	  -DBUILD_BENCHMARKS=OFF \
+	  -DBUILD_GEOSOP=OFF \
 	  -DCMAKE_C_FLAGS="$(CFLAGS)" \
 	  -DCMAKE_CXX_FLAGS="$(CXXFLAGS)" \
 	  -DCMAKE_EXE_LINKER_FLAGS="$(LDFLAGS)" && \
