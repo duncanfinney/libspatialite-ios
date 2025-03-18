@@ -23,6 +23,22 @@ else
     IOS_SDK = $(IOS_PLATFORM_DEVELOPER)/SDKs/$(shell ls $(IOS_PLATFORM_DEVELOPER)/SDKs | sort -r | head -n1)
 endif
 
+# Conditionally set the toolchain file flag (only for iOS builds)
+ifeq ($(IOS_PLATFORM),MacOSX)
+    TOOLCHAIN =
+else
+    TOOLCHAIN = -DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/ios.toolchain.cmake
+endif
+
+# For MacOSX, add extra flags: set system name and specify compiler paths.
+ifeq ($(IOS_PLATFORM),MacOSX)
+    EXTRA_CMAKE_FLAGS = -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
+else
+    EXTRA_CMAKE_FLAGS =
+endif
+
+unexport IOS_PLATFORM
+
 # Build directories for our desired arches/platforms
 BUILD_DIRS = $(CURDIR)/build/armv7-iPhoneOS \
              $(CURDIR)/build/armv7s-iPhoneOS \
@@ -37,11 +53,12 @@ lib/libspatialite.a: build_arches
 
 # Build separate architectures, including a host build for ARM macOS.
 build_arches: $(BUILD_DIRS)
-	$(MAKE) $(MAKEFLAGS) arch ARCH=armv7  IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
-	$(MAKE) $(MAKEFLAGS) arch ARCH=armv7s IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
-	$(MAKE) $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
-	$(MAKE) $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=iPhoneSimulator HOST=arm-apple-darwin
-	$(MAKE) $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=MacOSX         HOST=arm64-apple-darwin
+	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7  IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
+	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7s IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
+	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64 IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
+	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64 IOS_PLATFORM=iPhoneSimulator HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64 IOS_PLATFORM=MacOSX         HOST=arm-apple-darwin
+
 
 # Create the build directory for a given ARCH and IOS_PLATFORM
 $(CURDIR)/build/%:
@@ -70,7 +87,7 @@ $(LIBDIR)/libspatialite.a: $(LIBDIR)/libproj.a $(LIBDIR)/libgeos.a $(CURDIR)/spa
 	  CXXFLAGS="$(CXXFLAGS) -Wno-error=implicit-function-declaration -Wno-error=int-conversion" \
 	  LDFLAGS="$(LDFLAGS) -lc++ -liconv -lgeos -lgeos_c -lproj" \
 	  ./configure --host=$(HOST) --enable-freexl=no --enable-libxml2=no --enable-rttopo=no --disable-rttopo --disable-gcp --enable-minizip=no --prefix=$(PREFIX) --with-geosconfig=$(BINDIR)/geos-config --disable-shared --disable-loadable-extension && \
-	  make clean && make -j $(BUILD_PARALLELISM) $(MAKEFLAGS) install-strip
+	  make clean && make -j $(BUILD_PARALLELISM) install-strip
 
 $(CURDIR)/spatialite:
 	curl http://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-5.1.0.tar.gz > spatialite.tar.gz
@@ -83,7 +100,8 @@ $(LIBDIR)/libproj.a: $(CURDIR)/proj
 	cd proj && mkdir -p build && cd build && cmake .. \
 	  -DCMAKE_OSX_SYSROOT=$$(xcrun --sdk $(IOS_SDK_NAME) --show-sdk-path) \
 	  -DCMAKE_OSX_ARCHITECTURES=$(ARCH) \
-	  -DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/ios.toolchain.cmake \
+	  $(TOOLCHAIN) \
+	  $(EXTRA_CMAKE_FLAGS) \
 	  -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 	  -DBUILD_SHARED_LIBS=OFF \
 	  -DCMAKE_C_FLAGS="$(CFLAGS)" \
@@ -92,8 +110,15 @@ $(LIBDIR)/libproj.a: $(CURDIR)/proj
 	  -DENABLE_CURL=OFF \
 	  -DENABLE_TIFF=OFF \
 	  -DBUILD_PROJSYNC=OFF \
+	  -DBUILD_CCT=OFF \
+	  -DBUILD_CS2CS=OFF \
+	  -DBUILD_GEOD=OFF \
+	  -DBUILD_GIE=OFF \
+	  -DBUILD_PROJ=OFF \
+	  -DBUILD_PROJINFO=OFF \
+	  -DBUILD_PROJSYNC=OFF \
 	  -DBUILD_TESTING=OFF && \
-	make -j $(BUILD_PARALLELISM) $(MAKEFLAGS) && make install
+	make -j $(BUILD_PARALLELISM) && make install
 
 $(CURDIR)/proj:
 	curl -L http://download.osgeo.org/proj/proj-9.5.1.tar.gz > proj.tar.gz
@@ -102,18 +127,21 @@ $(CURDIR)/proj:
 	mv proj-9.5.1 proj
 
 $(LIBDIR)/libgeos.a: $(CURDIR)/geos
+	env | sort
 	cd geos && mkdir -p build && cd build && cmake .. \
 	  -DCMAKE_OSX_SYSROOT=$$(xcrun --sdk $(IOS_SDK_NAME) --show-sdk-path) \
 	  -DCMAKE_OSX_ARCHITECTURES=$(ARCH) \
-	  -DCMAKE_TOOLCHAIN_FILE=$(CURDIR)/ios.toolchain.cmake \
+	  $(TOOLCHAIN) \
+	  $(EXTRA_CMAKE_FLAGS) \
 	  -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 	  -DBUILD_SHARED_LIBS=OFF \
 	  -DBUILD_TESTING=OFF \
 	  -DBUILD_DOCUMENTATION=OFF \
+	  -DBUILD_BENCHMARKS=OFF \
 	  -DCMAKE_C_FLAGS="$(CFLAGS)" \
 	  -DCMAKE_CXX_FLAGS="$(CXXFLAGS)" \
 	  -DCMAKE_EXE_LINKER_FLAGS="$(LDFLAGS)" && \
-	make -j $(BUILD_PARALLELISM) $(MAKEFLAGS) && make install
+	make -j $(BUILD_PARALLELISM) && make install
 
 $(CURDIR)/geos:
 	curl http://download.osgeo.org/geos/geos-3.13.0.tar.bz2 > geos.tar.bz2
@@ -129,7 +157,7 @@ $(LIBDIR)/libsqlite3.a: $(CURDIR)/sqlite3
 	  CXXFLAGS="$(CXXFLAGS) -DSQLITE_THREADSAFE=1 -DSQLITE_ENABLE_RTREE=1 -DSQLITE_ENABLE_FTS3=1 -DSQLITE_ENABLE_FTS3_PARENTHESIS=1" \
 	  LDFLAGS="-Wl,-arch -Wl,$(ARCH) -arch_only $(ARCH) $(LDFLAGS)" \
 	  ./configure --host=$(HOST) --prefix=$(PREFIX) --disable-shared --enable-static && \
-	  make $(MAKEFLAGS) clean install-headers install-lib
+	  make clean install-headers install-lib
 
 $(CURDIR)/sqlite3:
 	curl https://www.sqlite.org/2025/sqlite-autoconf-3490000.tar.gz > sqlite3.tar.gz
