@@ -6,32 +6,42 @@ BUILD_PARALLELISM ?= 10
 ifeq ($(IOS_PLATFORM), iPhoneSimulator)
     IOS_SDK_NAME = iphonesimulator
     MIN_VERSION_FLAG = -mios-simulator-version-min=7.0
-else
+else ifeq ($(IOS_PLATFORM), iPhoneOS)
     IOS_SDK_NAME = iphoneos
     MIN_VERSION_FLAG = -miphoneos-version-min=7.0
+else ifeq ($(IOS_PLATFORM), MacOSX)
+    IOS_SDK_NAME = macosx
+    MIN_VERSION_FLAG = -mmacosx-version-min=10.12
 endif
 
-# Pick the latest SDK in the directory
-IOS_PLATFORM_DEVELOPER = $(XCODE_DEVELOPER)/Platforms/$(IOS_PLATFORM).platform/Developer
-IOS_SDK = $(IOS_PLATFORM_DEVELOPER)/SDKs/$(shell ls $(IOS_PLATFORM_DEVELOPER)/SDKs | sort -r | head -n1)
+# Pick the latest SDK in the directory (for iOS; for MacOSX we assume Xcode default)
+ifeq ($(IOS_PLATFORM), MacOSX)
+    IOS_SDK = $(shell xcrun --sdk macosx --show-sdk-path)
+    IOS_PLATFORM_DEVELOPER =
+else
+    IOS_PLATFORM_DEVELOPER = $(XCODE_DEVELOPER)/Platforms/$(IOS_PLATFORM).platform/Developer
+    IOS_SDK = $(IOS_PLATFORM_DEVELOPER)/SDKs/$(shell ls $(IOS_PLATFORM_DEVELOPER)/SDKs | sort -r | head -n1)
+endif
 
 # Build directories for our desired arches/platforms
 BUILD_DIRS = $(CURDIR)/build/armv7-iPhoneOS \
              $(CURDIR)/build/armv7s-iPhoneOS \
              $(CURDIR)/build/arm64-iPhoneOS \
-             $(CURDIR)/build/arm64-iPhoneSimulator
+             $(CURDIR)/build/arm64-iPhoneSimulator \
+             $(CURDIR)/build/arm64-MacOSX
 
 all: lib/libspatialite.a
 
 lib/libspatialite.a: build_arches
 	@./build-xcframework.sh
 
-# Build separate architectures
+# Build separate architectures, including a host build for ARM macOS.
 build_arches: $(BUILD_DIRS)
 	$(MAKE) $(MAKEFLAGS) arch ARCH=armv7  IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
 	$(MAKE) $(MAKEFLAGS) arch ARCH=armv7s IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
 	$(MAKE) $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
 	$(MAKE) $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=iPhoneSimulator HOST=arm-apple-darwin
+	$(MAKE) $(MAKEFLAGS) arch ARCH=arm64 IOS_PLATFORM=MacOSX         HOST=arm64-apple-darwin
 
 # Create the build directory for a given ARCH and IOS_PLATFORM
 $(CURDIR)/build/%:
@@ -82,8 +92,7 @@ $(LIBDIR)/libproj.a: $(CURDIR)/proj
 	  -DENABLE_CURL=OFF \
 	  -DENABLE_TIFF=OFF \
 	  -DBUILD_PROJSYNC=OFF \
-	  -DBUILD_TESTING=OFF \
-	  -DBUILD_APPS=OFF && \
+	  -DBUILD_TESTING=OFF && \
 	make -j $(BUILD_PARALLELISM) $(MAKEFLAGS) && make install
 
 $(CURDIR)/proj:
