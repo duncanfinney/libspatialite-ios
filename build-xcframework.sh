@@ -18,10 +18,14 @@ rm -rf "$XCFRAMEWORK_OUTPUT"
 
 mkdir -p "$OUT_DIR"
 
+function yellow() {
+  echo -e "\e[0;33m$1\e[0m"
+}
+
 #------------------------------------------------------------------------------
 # Merge the four libraries for each platform variant.
 # For device, merge arm64, armv7 and armv7s:
-echo "Merging device libraries..."
+yellow "Merging device libraries..."
 libtool -static -o "$OUT_DIR/merged-arm64-iPhoneOS.a" \
   "$BUILD_DIR/arm64-iPhoneOS/lib/libspatialite.a" \
   "$BUILD_DIR/arm64-iPhoneOS/lib/libgeos.a" \
@@ -29,26 +33,27 @@ libtool -static -o "$OUT_DIR/merged-arm64-iPhoneOS.a" \
   "$BUILD_DIR/arm64-iPhoneOS/lib/libproj.a" \
 #   "$BUILD_DIR/arm64-iPhoneOS/lib/libsqlite3.a"
 
-libtool -static -o "$OUT_DIR/merged-armv7-iPhoneOS.a" \
-  "$BUILD_DIR/armv7-iPhoneOS/lib/libspatialite.a" \
-  "$BUILD_DIR/armv7-iPhoneOS/lib/libgeos.a" \
-  "$BUILD_DIR/armv7-iPhoneOS/lib/libgeos_c.a" \
-  "$BUILD_DIR/armv7-iPhoneOS/lib/libproj.a" \
-#   "$BUILD_DIR/armv7-iPhoneOS/lib/libsqlite3.a"
+# libtool -static -o "$OUT_DIR/merged-armv7-iPhoneOS.a" \
+#   "$BUILD_DIR/armv7-iPhoneOS/lib/libspatialite.a" \
+#   "$BUILD_DIR/armv7-iPhoneOS/lib/libgeos.a" \
+#   "$BUILD_DIR/armv7-iPhoneOS/lib/libgeos_c.a" \
+#   "$BUILD_DIR/armv7-iPhoneOS/lib/libproj.a" \
+# #   "$BUILD_DIR/armv7-iPhoneOS/lib/libsqlite3.a"
 
-libtool -static -o "$OUT_DIR/merged-armv7s-iPhoneOS.a" \
-  "$BUILD_DIR/armv7s-iPhoneOS/lib/libspatialite.a" \
-  "$BUILD_DIR/armv7s-iPhoneOS/lib/libgeos.a" \
-  "$BUILD_DIR/armv7s-iPhoneOS/lib/libgeos_c.a" \
-  "$BUILD_DIR/armv7s-iPhoneOS/lib/libproj.a" \
-#   "$BUILD_DIR/armv7s-iPhoneOS/lib/libsqlite3.a"
+# libtool -static -o "$OUT_DIR/merged-armv7s-iPhoneOS.a" \
+#   "$BUILD_DIR/armv7s-iPhoneOS/lib/libspatialite.a" \
+#   "$BUILD_DIR/armv7s-iPhoneOS/lib/libgeos.a" \
+#   "$BUILD_DIR/armv7s-iPhoneOS/lib/libgeos_c.a" \
+#   "$BUILD_DIR/armv7s-iPhoneOS/lib/libproj.a" \
+# #   "$BUILD_DIR/armv7s-iPhoneOS/lib/libsqlite3.a"
 
 # Create a fat device library from the device builds:
-lipo -create \
-  "$OUT_DIR/merged-arm64-iPhoneOS.a" \
-  "$OUT_DIR/merged-armv7-iPhoneOS.a" \
-  "$OUT_DIR/merged-armv7s-iPhoneOS.a" \
-  -output "$OUT_DIR/merged-device.a"
+# lipo -create \
+  # "$OUT_DIR/merged-arm64-iPhoneOS.a" \
+  # "$OUT_DIR/merged-armv7-iPhoneOS.a" \
+  # "$OUT_DIR/merged-armv7s-iPhoneOS.a" \
+  # -output "$OUT_DIR/merged-device.a"
+cp "$OUT_DIR/merged-arm64-iPhoneOS.a" "$OUT_DIR/merged-device.a"
 
 #------------------------------------------------------------------------------
 # For simulator, merge the simulator libraries (here we have just arm64):
@@ -87,9 +92,16 @@ libtool -static -o "$OUT_DIR/merged-arm64_32-AppleWatchOS.a" \
   "$BUILD_DIR/arm64_32-AppleWatchOS/lib/libgeos_c.a" \
   "$BUILD_DIR/arm64_32-AppleWatchOS/lib/libproj.a"
 
+libtool -static -o "$OUT_DIR/merged-arm64-AppleWatchOS.a" \
+  "$BUILD_DIR/arm64-AppleWatchOS/lib/libspatialite.a" \
+  "$BUILD_DIR/arm64-AppleWatchOS/lib/libgeos.a" \
+  "$BUILD_DIR/arm64-AppleWatchOS/lib/libgeos_c.a" \
+  "$BUILD_DIR/arm64-AppleWatchOS/lib/libproj.a"
+
 lipo -create \
   "$OUT_DIR/merged-armv7k-AppleWatchOS.a" \
   "$OUT_DIR/merged-arm64_32-AppleWatchOS.a" \
+  "$OUT_DIR/merged-arm64-AppleWatchOS.a" \
   -output "$OUT_DIR/merged-watchOS-device.a"
 
 #------------------------------------------------------------------------------

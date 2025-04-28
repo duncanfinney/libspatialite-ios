@@ -75,13 +75,14 @@ lib/libspatialite.a: build_arches
 
 # Build architectures; note HOST for watch builds is set to arm-apple-watchos.
 build_arches: $(BUILD_DIRS)
-	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7    IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
-	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7s   IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
+	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7    IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
+	# $(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7s   IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
 	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64    IOS_PLATFORM=iPhoneOS        HOST=arm-apple-darwin
 	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64    IOS_PLATFORM=iPhoneSimulator HOST=arm-apple-darwin
 	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=armv7k   IOS_PLATFORM=AppleWatchOS  	HOST=arm-apple-darwin
 	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64_32 IOS_PLATFORM=AppleWatchOS 	HOST=arm-apple-darwin
-	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64 IOS_PLATFORM=AppleWatchSimulator HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64    IOS_PLATFORM=AppleWatchOS 	HOST=arm-apple-darwin
+	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64    IOS_PLATFORM=AppleWatchSimulator HOST=arm-apple-darwin
 	$(MAKE) --no-print-directory MAKEFLAGS= arch ARCH=arm64    IOS_PLATFORM=MacOSX
 
 # Create build directory for given ARCH and IOS_PLATFORM
